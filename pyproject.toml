@@ -1,0 +1,100 @@
+
+[project]
+name = "document-assistant-rag"
+version = "0.1.0"
+description = "Document Assistant using Retrieval-Augmented Generation"
+readme = "README.md"
+authors = [
+    { name = "Chokunnotlikeus", email = "ittikorn.chokun@gmail.com" }
+]
+requires-python = ">=3.11,<3.12"
+
+dependencies = [
+    "accelerate>=1.14.0",
+    "anthropic>=0.120.2",
+    "beautifulsoup4>=4.15.0",
+    "bitsandbytes>=0.46.1",
+    "chromadb>=1.5.9",
+    "datasets>=5.0.1",
+    "diffusers>=0.40.0",
+    "feedparser>=6.0.14",
+    "google-genai>=2.17.0",
+    "google-generativeai>=0.8.6",
+    "gradio>=6.22.0",
+    "groq>=1.6.0",
+    "ipykernel>=7.3.0",
+    "ipywidgets>=8.1.8",
+    "jupyter-dash>=0.4.2",
+    "langchain>=1.3.14",
+    "langchain-anthropic>=1.5.4",
+    "langchain-chroma>=1.1.0",
+    "langchain-community>=0.4.2",
+    "langchain-core>=1.5.3",
+    "langchain-experimental>=0.4.2",
+    "langchain-huggingface>=1.2.2",
+    "langchain-ollama>=1.1.0",
+    "langchain-openai>=1.4.1",
+    "langchain-pinecone>=0.2.13",
+    "langchain-tavily>=0.2.0",
+    "langchain-text-splitters>=1.1.2",
+    "langchain-unstructured>=1.0.1",
+    "litellm>=1.95.0",
+    "matplotlib>=3.11.1",
+    "modal>=1.5.3",
+    "nbformat>=5.11.0",
+    "numpy>=2.4.6",
+    "ollama>=0.6.2",
+    "openai>=2.53.0",
+    "pandas>=3.0.5",
+    "peft>=0.21.0",
+    "pinecone>=7.3.0",
+    "plotly>=6.9.0",
+    "protobuf>=5.29.6",
+    "psutil>=7.2.2",
+    "pydub>=0.25.1",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
+    "sentence-transformers>=5.7.0",
+    "setuptools<82",
+    "soundfile>=0.14.0",
+    "speedtest-cli>=2.1.3",
+    "tavily>=1.1.0",
+    "tiktoken>=0.13.0",
+    "torch",
+    "torchaudio",
+    "torchvision",
+    "tqdm>=4.70.0",
+    "transformers>=5.14.1",
+    "trl>=1.13.0",
+    "unstructured>=0.27.27",
+    "wandb>=0.28.1",
+    "xgboost>=3.2.0",
+]
+
+[project.scripts]
+document-assistant-rag = "document_assistant_rag:main"
+
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "jupyter>=1.1.1",
+]
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch" }
+torchvision = { index = "pytorch" }
+torchaudio = { index = "pytorch" }
+
+[tool.uv]
+package = false
