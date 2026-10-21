@@ -24,8 +24,8 @@ os.environ["REQ_CA_BUNDLE"] = certifi.where()
 
 # Data Indexing
 
-embeddings = OpenAIEmbeddings(model=models,chunk_size=50,retry_min_seconds=15)  # retry_min_second : เวลาขั้นต่ำที่รอก่อนลองส่ง Request ใหม่ เมื่อเรียก OpenAI API แล้วเกิดข้อผิดพลาด
-vectorstore = PineconeVectorStore(index_name="langchain-docs",embedding=embeddings)
+embeddings = OpenAIEmbeddings(model=models,chunk_size=50,retry_min_seconds=15,)  # retry_min_second : เวลาขั้นต่ำที่รอก่อนลองส่ง Request ใหม่ เมื่อเรียก OpenAI API แล้วเกิดข้อผิดพลาด
+vectorstore = PineconeVectorStore(index_name="new",embedding=embeddings)
 
 #Tavily 
 tavily_extract = TavilyExtract()
@@ -35,41 +35,49 @@ tavily_crawl = TavilyCrawl()
 # Function จัดเก็บ Document ใน VectorStore
 async def index_document_async(documents : List[Document],batch_size:int = 50) : # async เขียนโปรแกรมให้รอการทำงานบางอย่างได้ 
     """Process documents in batches asynchronously."""
+    # Split document  into chunks 
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlap=200,)
+    split_docs = text_splitter.split_documents(documents)
+    if not split_docs :
+        raise ValueError("No text chunks were created ")
+    
+    print(f"Documents loaded: {len(documents)}")
+    print(f"Chunks created: {len(split_docs)}")
+    
+    
     #create batches (แบ่ง Document แล้วเก็บใน Batches)
-    batches = [documents[i:i+batch_size] for i in range(0,len(documents),batch_size)]
+    batches = [split_docs[i:i+batch_size] for i in range(0,len(documents),batch_size)]
     
-    # นำเอกสารของแต่ละ Batch ไปเพิ่มลงใน Vector Database
-    async def add_batches(batch:List[Document],batch_num:int) :
-        try :
+    successful = 0 
+    
+    for i , batch in enumerate(batches) :
+        batch_num = i+1 
+        try : 
             await vectorstore.aadd_documents(batch)
+            successful += 1 
+            print(f"Batch : {batch_num}/{len(batch)}"
+                   f"Index Successfully")
         except Exception as e :
-            return False 
-        return True 
-    
-    # batches_size กับ tasks ต้องเท่ากัน
-    #Process batches  counting นำข้อมูลแต่ละbatches ใส่ลงใน vector data โดยที่เอาเลขindexไปด้วย
-    tasks = [add_batches(batch,i+1)for i ,batch in enumerate(batches)] # i+1 เพราะ index เริ่มที่ 0  enumerate = ให้เราได้เลข Index กับ batch ในแต่ละรอบ
-    # สร้าง Coroutine สำหรับแต่ละ Batch แล้วเก็บไว้ใน List ชื่อ tasks
-    
-    # *tasks กระจายสมาชิกใน List ให้เป็น Arguments ของ gather() , await  รอจน Tasks ที่ส่งเข้าไปเสร็จ return_exceptions=True หาก Task ใดมี Exception ที่หลุดออกมา จะเก็บ Exception นั้นไว้ในผลลัพธ์แทนการส่ง Exception ออกทันที
-    results = await asyncio.gather(*tasks,return_exceptions=True) # asyncio.gather() นำหลายๆ batch มาทำงานร่วมกันโดยไม่จำเป็นต้องรอbatchแรกเสร็จก่อน
-    
-    #Counting successfull  batches 
-    successful = sum(1 for result in results if result is True)
+            print(f"Batch {batch_num}/{len(batches)} failed: "f"{type(e).__name__}: {e}")
+            raise RuntimeError(f"Indexing failed at batch {batch_num}. ""Check the original error above.") from e
+
     print(f"Successful batches: {successful}/{len(batches)}")
+
+    return len(split_docs)
     
     
-async def main() :
-    res = tavily_crawl.invoke({"url":"https://openstax.org/books/calculus-volume-1/pages/5-3-the-fundamental-theorem-of-calculus","max_depth":2,"extra_depth":"advanced",})
-    all_docs = []
+    
+async def main(url:str) :
+    res = tavily_crawl.invoke({"url":url,"max_depth":2,"extra_depth":"advanced",})
     for tavily_crawl_result in res['results'] :
         all_docs.append(Document(page_content=tavily_crawl_result["raw_content"],metadata={"source":tavily_crawl_result["url"]},))
     
     #split Document 
-    text_splitting = RecursiveCharacterTextSplitter(chunk_size=4000,chunk_overlap=200)
+    text_splitting = RecursiveCharacterTextSplitter(chunk_size=1000,chunk_overlap=200)
     splitted_docs = text_splitting.split_documents(all_docs)
     await index_document_async(splitted_docs,batch_size=500)
     
     
 if __name__ == "__main__" :
-    asyncio.run(main())
+    url = input("Website URL :").strip()
+    asyncio.run(main(url))
